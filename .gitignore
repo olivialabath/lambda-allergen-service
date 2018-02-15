@@ -1,0 +1,16 @@
+# the Config class
+Config.java
+
+# Compiled Class File
+*.class
+
+# Log File
+*.log
+
+# Package Files #
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
