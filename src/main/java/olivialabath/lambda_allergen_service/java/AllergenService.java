@@ -43,7 +43,7 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 	
 	public Allergen[] handleRequest(Map<String, Integer[]> input, Context context) {
 		Integer[] paging = input.get("paging");
-		System.out.println("pages: " + paging[0] + ", count: " + paging[1]);
+		System.out.println("page: " + paging[0] + ", count: " + paging[1]);
 		
 		Twitter twitter = initTwitter();
 		
@@ -56,13 +56,13 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 		return allergens.toArray(new Allergen[allergens.size()]);
 	}
 	
-	public List<Allergen> getAllergens(Twitter twitter, int pages, int count){
+	public List<Allergen> getAllergens(Twitter twitter, int page, int count){
 		List<Allergen> allergens = new ArrayList<Allergen>();
 		List<Status> statuses = new ArrayList<Status>();
 		try {
-			// get <pages> number of pages, each containing <count> number of tweets
-			statuses = twitter.getUserTimeline("ATXPollen", new Paging(pages, count));
-			
+			// gets the page, which contains count number of tweets
+			statuses = twitter.getUserTimeline("ATXPollen", new Paging(page, count));
+			System.out.println("number of statuses: " + statuses.size());
 			// parse each status
 			for(Status s : statuses) {
 				allergens.addAll(parseStatus(s));
@@ -70,6 +70,8 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 		} catch (TwitterException e) {
 			e.printStackTrace();
 		}
+		
+		System.out.println("number of allergens: " + allergens.size());
 		
 		return allergens;
 	}
@@ -134,9 +136,7 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 
 	private void persistData(List<Allergen> allergens) throws ConditionalCheckFailedException {
 		DynamoDBMapper mapper = new DynamoDBMapper(client);
-		for(Allergen a : allergens) {
-			mapper.save(a);
-		}
+		mapper.batchSave(allergens);
 	}
 	
 	private void initDynamoDBClient() {
