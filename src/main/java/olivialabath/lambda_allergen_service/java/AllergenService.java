@@ -98,11 +98,13 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 		boolean traceFlag = false;
 		for(int i = 0; i < text.length; ++i) {
 			
-			// if the word is "Traces, set the traceFlag and go to next word
-			if(text[i].equals("Traces")) { 
+			// if the word is "Traces", set the traceFlag and go to next word
+			if(text[i].equals("Traces") || text[i].equals("Trace")) { 
 				traceFlag = true;
 			}
-			
+			else if(text[i].equals("H") || text[i].equals("M") || text[i].equals("L") || text[i].equals("of") || text[i].equals("and")) {
+				// do nothing
+			}	
 			// otherwise, check the word against a regex pattern, and create
 			// a new Allergen if it's a valid allergen name
 			else {
