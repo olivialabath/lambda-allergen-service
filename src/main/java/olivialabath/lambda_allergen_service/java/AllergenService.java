@@ -40,6 +40,7 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
             "Elm", "Oak", "Ash", "Mesquite", "Pecan", "Privet", "Sycamore", "Mulberry", "Willow",
             "Red Juniper Berry", "Sage"};
 	
+	
 	public Allergen[] handleRequest(Map<String, Integer[]> input, Context context) {
 		Integer[] paging = input.get("paging");
 		System.out.println("pages: " + paging[0] + ", count: " + paging[1]);
@@ -59,16 +60,14 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 		List<Allergen> allergens = new ArrayList<Allergen>();
 		List<Status> statuses = new ArrayList<Status>();
 		try {
-			// get the most recent pagingCount number of tweets
+			// get <pages> number of pages, each containing <count> number of tweets
 			statuses = twitter.getUserTimeline("ATXPollen", new Paging(pages, count));
 			
-			// 
+			// parse each status
 			for(Status s : statuses) {
 				allergens.addAll(parseStatus(s));
 			}
 		} catch (TwitterException e) {
-			e.printStackTrace();
-		} catch (ParseException e) {
 			e.printStackTrace();
 		}
 		
@@ -86,7 +85,7 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 		return tf.getInstance();
 	}
 	
-	public List<Allergen> parseStatus(Status status) throws ParseException{
+	public List<Allergen> parseStatus(Status status) {
 		List<Allergen> allergens = new ArrayList<Allergen>();
 		
 		// get the status's date
@@ -133,7 +132,6 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 	    return true;
 	}
 
-	
 	private void persistData(List<Allergen> allergens) throws ConditionalCheckFailedException {
 		DynamoDBMapper mapper = new DynamoDBMapper(client);
 		for(Allergen a : allergens) {
