@@ -81,6 +81,7 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 	public Twitter initTwitter() {
 		ConfigurationBuilder cb = new ConfigurationBuilder();
 		cb.setDebugEnabled(true)
+			.setTweetModeExtended(true)
 			.setOAuthConsumerKey(Config.consumer_key)
 			.setOAuthConsumerSecret(Config.consumer_secret)
 			.setOAuthAccessToken(Config.access_token)
@@ -98,7 +99,7 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 		
 		// parse the text
 		String[] text = status.getText().replaceAll("\\p{P}", "").split("\\s"); // remove all punctuation and split at white spaces
-		System.out.println("split string = " + Arrays.toString(text));
+//		System.out.println("split string = " + Arrays.toString(text));
 		
 		boolean traceFlag = false;
 		for(int i = 0; i < text.length; ++i) {
