@@ -1,6 +1,7 @@
 package olivialabath.lambda_allergen_service.java;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.text.ParseException;
@@ -35,10 +36,11 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
             "(?i)(.*marsh.*)", "(?i)(.*cedar.*)", "(?i)(.*elm.*)", "(?i)(.*oak.*)",
             "(?i)(.*ash.*)", "(?i)(.*mesquite.*)", "(?i)(.*pecan.*)", "(?i)(.*privet.*)",
             "(?i)(.*sycamore.*)", "(?i)(.*mulberry.*)", "(?i)(.*willow.*)", "(?i)(.*juniper.*)",
-            "(?i)(.*sage.*)"};
+            "(?i)(.*sage.*)", "(?i)(.*acacia.*)", "(?i)(.*birch.*)", "(?i)(.*hackberry.*)", "(?i)(.*poplar.*)",
+            "(?i)(.*cottonwood.*)", "(?i)(.*pine.*)"};
 	public static final String[] AllergenNames = {"Mold", "Grass", "Pigweed", "Ragweed", "Marsh Elder", "Cedar",
             "Elm", "Oak", "Ash", "Mesquite", "Pecan", "Privet", "Sycamore", "Mulberry", "Willow",
-            "Red Juniper Berry", "Sage"};
+            "Red Juniper Berry", "Sage", "Acacia", "Birch", "Hackberry", "Poplar", "Cottonwood", "Pine"};
 	
 	
 	public Allergen[] handleRequest(Map<String, Integer[]> input, Context context) {
@@ -96,6 +98,8 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 		
 		// parse the text
 		String[] text = status.getText().replaceAll("\\p{P}", "").split("\\s"); // remove all punctuation and split at white spaces
+		System.out.println("split string = " + Arrays.toString(text));
+		
 		boolean traceFlag = false;
 		for(int i = 0; i < text.length; ++i) {
 			
