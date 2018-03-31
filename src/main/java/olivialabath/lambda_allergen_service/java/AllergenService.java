@@ -2,6 +2,7 @@ package olivialabath.lambda_allergen_service.java;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.text.ParseException;
@@ -32,15 +33,34 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 	private AmazonDynamoDB client;
 	
 	private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss z yyyy");
-	private static final String[] NamePatterns = {"(?i)(.*mold.*)", "(?i)(.*grass.*)", "(?i)(pig ?+weed)", "(?i)(rag ?+weed)",
-            "(?i)(.*marsh.*)", "(?i)(.*cedar.*)", "(?i)(.*elm.*)", "(?i)(.*oak.*)",
-            "(?i)(.*ash.*)", "(?i)(.*mesquite.*)", "(?i)(.*pecan.*)", "(?i)(.*privet.*)",
-            "(?i)(.*sycamore.*)", "(?i)(.*mulberry.*)", "(?i)(.*willow.*)", "(?i)(.*juniper.*)",
-            "(?i)(.*sage.*)", "(?i)(.*acacia.*)", "(?i)(.*birch.*)", "(?i)(.*hackberry.*)", "(?i)(.*poplar.*)",
-            "(?i)(.*cottonwood.*)", "(?i)(.*pine.*)"};
-	public static final String[] AllergenNames = {"Mold", "Grass", "Pigweed", "Ragweed", "Marsh Elder", "Cedar",
-            "Elm", "Oak", "Ash", "Mesquite", "Pecan", "Privet", "Sycamore", "Mulberry", "Willow",
-            "Red Juniper Berry", "Sage", "Acacia", "Birch", "Hackberry", "Poplar", "Cottonwood", "Pine"};
+	public static final HashMap<String, String> AllergenMap;
+	static {
+		// marsh elder and red juniper berry are the only 2 where key != value
+		AllergenMap = new HashMap<String, String>();
+		AllergenMap.put("Mold", "Mold");
+		AllergenMap.put("Grass", "Grass");
+		AllergenMap.put("Pigweed", "Pigweed");
+		AllergenMap.put("Ragweed", "Ragweed");
+		AllergenMap.put("Marsh", "Marsh Elder");
+		AllergenMap.put("Cedar", "Cedar");
+		AllergenMap.put("Elm", "Elm");
+		AllergenMap.put("Oak", "Oak");
+		AllergenMap.put("Ash", "Ash");
+		AllergenMap.put("Mesquite", "Mesquite");
+		AllergenMap.put("Pecan", "Pecan");
+		AllergenMap.put("Privet", "Privet");
+		AllergenMap.put("Sycamore", "Sycamore");
+		AllergenMap.put("Mulberry", "Mulberry");
+		AllergenMap.put("Willow", "Willow");
+		AllergenMap.put("Juniper", "Red Juniper Berry");
+		AllergenMap.put("Sage", "Sage");
+		AllergenMap.put("Acacia", "Acacia");
+		AllergenMap.put("Birch", "Birch");
+		AllergenMap.put("Hackberry", "Hackberry");
+		AllergenMap.put("Poplar", "Poplar");
+		AllergenMap.put("Cottonwood", "Cottonwood");
+		AllergenMap.put("Pine", "Pine");
+	}
 	
 	
 	public Allergen[] handleRequest(Map<String, Integer[]> input, Context context) {
@@ -102,6 +122,9 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 //		System.out.println("split string = " + Arrays.toString(text));
 		
 		boolean traceFlag = false;
+		boolean allergenFlag = false;
+		int start = 0;
+		int end = 0;
 		for(int i = 0; i < text.length; ++i) {
 			
 			// if the word is "Traces", set the traceFlag and go to next word
@@ -110,23 +133,71 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 			}
 			else if(text[i].equals("H") || text[i].equals("M") || text[i].equals("L") || text[i].equals("of") || text[i].equals("and")) {
 				// do nothing
-			}	
-			// otherwise, check the word against a regex pattern, and create
-			// a new Allergen if it's a valid allergen name
-			else {
-				for(int j = 0; j < NamePatterns.length; ++j) {
-					if (text[i].matches(NamePatterns[j]) && traceFlag){
-						allergens.add(new Allergen(date.toEpochDay(), AllergenNames[j], 5));
-					} else if (text[i].matches(NamePatterns[j]) && i + 1 < text.length && isInteger(text[i + 1])) {
-						allergens.add(new Allergen(date.toEpochDay(), AllergenNames[j], Integer.parseInt(text[++i])));
-					}
-				}
+			}
+			// set allergenFlag and the starting index if the a potential allergen
+			// or set of allergens is found
+			else if(AllergenMap.containsKey(text[i]) && !traceFlag && !allergenFlag) {
+//				System.out.println("start = " + i);
+				start = i;
+				allergenFlag = true;
+			}
+			// reset the allergenFlag and the ending index if a number is found
+			else if(isInteger(text[i]) && allergenFlag) {
+//				System.out.println("end = " + i);
+				end = i;
+				allergenFlag = false;
+				List<Allergen> tempAllergens = parseSubset(Arrays.copyOfRange(text, start, end + 1), date);
+				if(tempAllergens.size() > 0 && tempAllergens.get(0).count > 0)
+					allergens.addAll(tempAllergens);
+			}
+			// if the traceFlag is set and an allergen is found, add it to the list
+			else if(traceFlag && AllergenMap.containsKey(text[i])) {
+				allergens.add(new Allergen(date.toEpochDay(), AllergenMap.get(text[i]), 5));
 			}
 		}
 		
 		return allergens;
 	}
 	
+	public List<Allergen> parseSubset(String[] text, LocalDate subsetDate){
+		List<Allergen> allergens = new ArrayList<Allergen>();
+		int subsetCount = -1;
+//		System.out.println(Arrays.toString(text));
+		
+		for(int i = 0; i < text.length; i++) {
+			// if the word is a valid allergen, add it to allergens
+			if(AllergenMap.containsKey(text[i])) {
+				Allergen a = new Allergen();
+				a.setName(AllergenMap.get(text[i]));
+				allergens.add(a);
+			}
+			else if(text[i].equals("&") || text[i].equals("and")) {
+				// do nothing
+//				System.out.println("and or & detected");
+			}
+			// if the word is a number, set subset count as it
+			else if(isInteger(text[i])) {
+				Integer temp = Integer.parseInt(text[i]);
+				subsetCount = temp.intValue();
+			}
+			// if the word is not an allergen or the word &/and, return prematurely
+			// subset count will be -1, which signals that no valid count was found
+			else if(!AllergenMap.containsKey(text[i])) {
+//				System.out.println("exiting early");
+				return allergens;
+			}
+		}
+		
+		for(Allergen a : allergens) {
+			a.setDate(subsetDate.toEpochDay());
+			a.setCount(subsetCount);
+		}
+		
+//		System.out.println(Arrays.toString(allergens.toArray()));
+		
+		return allergens;
+	}
+
 	public static boolean isInteger(String s) {
 	    if(s.isEmpty()) return false;
 	    for(int i = 0; i < s.length(); i++) {
@@ -138,7 +209,7 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 	    }
 	    return true;
 	}
-
+	
 	private void persistData(List<Allergen> allergens) throws ConditionalCheckFailedException {
 		DynamoDBMapper mapper = new DynamoDBMapper(client);
 		mapper.batchSave(allergens);
