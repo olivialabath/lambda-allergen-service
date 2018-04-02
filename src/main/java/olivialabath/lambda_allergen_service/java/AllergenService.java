@@ -60,6 +60,7 @@ public class AllergenService implements RequestHandler<Map<String, Integer[]>, A
 		AllergenMap.put("Poplar", "Poplar");
 		AllergenMap.put("Cottonwood", "Cottonwood");
 		AllergenMap.put("Pine", "Pine");
+		AllergenMap.put("Walnut", "Walnut");
 	}
 	
 	
